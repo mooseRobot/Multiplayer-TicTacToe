@@ -5,7 +5,7 @@ class TicTacToe():
         self.x = players.pop(random.randint(0,1))
         self.o = players[0]
         self.currenturn = self.o
-        self.board = [["" for x in range(3)] for i in range(3)]
+        self.board = [[" " for x in range(3)] for i in range(3)]
 
     def print_board(self):
         """Returns a string of the current board
