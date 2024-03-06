@@ -19,8 +19,9 @@ def main():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((SERVER_IP, PORT))
     s.setblocking(False)
-    print(f"Connected to {SERVER_IP}:{PORT}")
-    print('To play TicTacToe enter "/tictactoe playername"')
+    print(f"Connected to {SERVER_IP}:{PORT}"
+            'To play TicTacToe enter "/tictactoe playername"\n'\
+            'To leave the chat room, enter "/q"')
     s.sendall(username_header + username)
 
     while True:
