@@ -1,7 +1,8 @@
  # Python program to implement server side of chat room. 
 import socket 
 import select 
-import sys 
+import uuid
+from tictactoe import TicTacToe
 
 
 
@@ -12,6 +13,8 @@ class Server():
         self.ip_address = ip_address
         self.port = port
         self.games = {}
+        self.servername = "Server".encode('utf-8')
+        self.serverheader = f"{len(self.servername):<{10}}".encode('utf-8')
         
     def start_server(self):
         """
@@ -35,15 +38,14 @@ class Server():
                     if user is False:
                         continue
                     sockets_list.append(client_conn)
-                    self.clients[client_conn] = user
-                    self.clients[client_conn] = {'game': None}
+                    self.clients[client_conn] = {'user': user, 'game': None}
                     print(f"{user['data'].decode('utf-8')} joined from {client_addr[0]}:{client_addr[1]}")
                 # Existing socket is sending message
                 else:
                     msg = self.receive_message(client_socket)
                     # If no message is accepted, then close the connection
                     if msg is False:
-                        print(f"{self.clients[client_socket]['data'].decode('utf-8')} has disconnected")
+                        print(f"{self.clients[client_socket]['user']['data'].decode('utf-8')} has disconnected")
                         sockets_list.remove(client_socket)
                         del self.clients[client_socket]
                         continue
@@ -63,34 +65,42 @@ class Server():
                     if msg['data'].decode()[:11] == "/tictactoe ":
                         if user['game'] != None:
                             msg = 'Please finish or forfeit your game with "/forfeit"'.encode('utf-8')
-                            msg_header = f"{len(msg):<10}".encode('utf-8')
-                            client_socket.send(user['header'] + "Server".encode('utf-8') + msg_header + msg)  # use user['header'] as its a known header length
+                            msg_header = f"{len(msg):<{10}}".encode('utf-8')
+                            client_socket.send(self.serverheader + self.servername + msg_header + msg)
                             continue
 
                         # Find and validate opponent
                         opponent_name = msg['data'].decode()[11:]
-                        opponent_conn = self.validate_opponent(user['data'], opponent_name)
+                        opponent_conn = self.validate_opponent(user['user']['data'], opponent_name)
                         if opponent_conn is False:
                             msg = "Invalid user".encode('utf-8')
-                            msg_header = f"{len(msg):<10}".encode('utf-8')
-                            client_socket.send(user['header'] + "Server".encode('utf-8') + msg_header + msg)  # use user['header'] as its a known header length
+                            msg_header = f"{len(msg):<{10}}".encode('utf-8')
+                            client_socket.send(self.serverheader + self.servername + msg_header + msg)
                             continue
                         
                         # Generate a unique game key and create the game
-                        gamekey = client_socket + opponent_conn
+                        gamekey = uuid.uuid1().int
+                        game = TicTacToe([client_socket, opponent_conn])
                         user['game'] = gamekey
                         self.clients[opponent_conn]['game'] = gamekey
-                        self.games[gamekey] 
-
-
-                    print(f"Received message from {user['data'].decode('utf-8')}")
+                        self.games[gamekey] = game
+                        
+                        # Construct message to send
+                        board_str = self.games[gamekey].print_board()
+                        msg = board_str + f"\n{self.clients[game.get_current_turn()]}'s turn.".encode('utf-8')
+                        msg_header = f"{len(msg):<10}".encode('utf-8')
+                        self.broadcast(client_socket, user['user']['header'], "Server".encode('utf-8'), msg_header, msg)
+                        client_socket.send(self.serverheader + self.servername + msg_header + msg)  # Send message to person who initiated the game
+                        continue
+                        
+                    print(f'Received message from {user["user"]["data"].decode("utf-8")}: {msg["data"].decode("utf-8")}')
                     # Send message to all connect clients
-                    self.broadcast(client_socket, user, msg)
+                    self.broadcast(client_socket, user['user']['header'], user['user']['data'], msg['header'], msg['data'])
 
-    def broadcast(self, client_socket, user, msg):
+    def broadcast(self, client_socket, user_header, user_data, msg_header, msg_data):
         for client in self.clients:
             if client != client_socket:
-                client.send(user['header'] + user['data'] + msg['header'] + msg['data'])
+                client.send(user_header + user_data + msg_header + msg_data)
 
     def receive_message(self, conn):
         try:
@@ -101,29 +111,13 @@ class Server():
             return {'header': message_header, 'data': conn.recv(message_length)}
         except:
             return False
-        
-    def generate_tictactoe_game(self, user_conn, opponent_conn):
-        """I AM WORKING HERE RIGHT NOW
-
-        Args:
-            user_conn (_type_): _description_
-            opponent_conn (_type_): _description_
-        """
-        gamekey = user_conn + opponent_conn
-        self.clients[user_conn]['game']  = gamekey
-        self.clients[opponent_conn]['game'] = gamekey
-        self.games[gamekey] = {
-            player1 = 
-        }
-        
-    def play_tictactoe(self, msg):
-        pass
 
     def validate_opponent(self, user, opponent):
         for client_conn, client_user in self.clients.items():
-            if client_user == user:
+            client_to_check = client_user['user']['data'].decode("utf-8")
+            if client_to_check == user:
                 return False
-            elif client_user == opponent:
+            elif client_to_check == opponent:
                 return client_conn
         return False
 
