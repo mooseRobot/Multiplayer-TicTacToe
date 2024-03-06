@@ -87,10 +87,10 @@ class Server():
                         
                         # Construct message to send
                         board_str = self.games[gamekey].print_board()
-                        msg = board_str + f"\n{self.clients[game.get_current_turn()]}'s turn.".encode('utf-8')
+                        msg = f"{self.clients[game.get_current_turn()]['user']['data'].decode('utf-8')}'s turn.\n" + board_str
                         msg_header = f"{len(msg):<10}".encode('utf-8')
-                        self.broadcast(client_socket, user['user']['header'], "Server".encode('utf-8'), msg_header, msg)
-                        client_socket.send(self.serverheader + self.servername + msg_header + msg)  # Send message to person who initiated the game
+                        self.broadcast(client_socket, user['user']['header'], "Server".encode('utf-8'), msg_header, msg.encode('utf-8'))
+                        client_socket.send(self.serverheader + self.servername + msg_header + msg.encode('utf-8'))  # Send message to person who initiated the game
                         continue
                         
                     print(f'Received message from {user["user"]["data"].decode("utf-8")}: {msg["data"].decode("utf-8")}')
