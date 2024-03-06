@@ -7,6 +7,23 @@ HEADER_LENGTH = 10
 SERVER_IP = "127.0.0.1"
 PORT = 12345
 
+def receive_message(s):
+    while True:
+        username_header = s.recv(HEADER_LENGTH)
+        if not len(username_header):
+            print("Connection closed")
+            sys.exit
+
+        # Receive and decode username
+        username_length = int(username_header.decode('utf-8'.strip()))
+        username = s.recv(username_length).decode('utf-8')
+
+        # Decode and display the received message
+        msg_header = s.recv(HEADER_LENGTH)
+        msg_length = int(msg_header.decode('utf-8').strip())
+        msg = s.recv(msg_length).decode('utf-8')
+
+        print(f'<{username}> {msg}')
 def main():
     """
     Using a socket to GET a file
@@ -32,22 +49,7 @@ def main():
             s.send(msg_header + msg)
         try:
             # Get messages and print them
-            while True:
-                username_header = s.recv(HEADER_LENGTH)
-                if not len(username_header):
-                    print("Connection closed")
-                    sys.exit
-
-                # Receive and decode username
-                username_length = int(username_header.decode('utf-8'.strip()))
-                username = s.recv(username_length).decode('utf-8')
-
-                # Decode and display the received message
-                msg_header = s.recv(HEADER_LENGTH)
-                msg_length = int(msg_header.decode('utf-8').strip())
-                msg = s.recv(msg_length).decode('utf-8')
-
-                print(f'<{username}> {msg}')
+            receive_message(s)
 
         except IOError as e:
             if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
