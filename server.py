@@ -70,12 +70,8 @@ class Server():
                         
 
                     if msg['data'].decode()[:11] == "/tictactoe ":
-                        if user['game'] != None:
-                            msg = 'Please finish or forfeit your game with "/forfeit"'.encode(
-                                'utf-8')
-                            msg_header = f"{len(msg):<{10}}".encode('utf-8')
-                            client_socket.send(
-                                self.serverheader + self.servername + msg_header + msg)
+                        if user['gamekey'] != None:
+                            self.send_message(client_socket, 'Please finish or forfeit your game with "/forfeit"')
                             continue
 
                         # Find and validate opponent
@@ -84,34 +80,31 @@ class Server():
                             user['user']['data'], opponent_name)
                         if opponent_conn is False:
                             self.send_message(client_socket, "Invalid user")
-                            # msg = "Invalid user".encode('utf-8')
-                            # msg_header = f"{len(msg):<{10}}".encode('utf-8')
-                            # client_socket.send(
-                            #     self.serverheader + self.servername + msg_header + msg)
                             continue
 
                         # Generate a unique game key and create the game
                         gamekey = uuid.uuid1().int
                         game = TicTacToe([client_socket, opponent_conn])
-                        user['game'] = gamekey
-                        self.clients[opponent_conn]['game'] = gamekey
+                        user['gamekey'] = gamekey
+                        self.clients[opponent_conn]['gamekey'] = gamekey
                         self.games[gamekey] = game
 
                         # Construct message to send
                         board_str = self.games[gamekey].print_board()
-                        msg = f"Welcome to TicTacToe! To play a move enter /x,y. x and y can be from any value 1-3.\n{self.clients[game.get_current_turn()]['user']['data'].decode('utf-8')}'s turn.\n" + board_str
+                        msg = f"Welcome to TicTacToe! To play a move enter /x,y. x and y can be from any value 1-3.\n{self.clients[game.get_current_player_name()]['user']['data'].decode('utf-8')}'s turn as o.\n" + board_str
                         msg_header = f"{len(msg):<10}".encode('utf-8')
                         self.broadcast(client_socket, self.serverheader,
                                        self.servername, msg_header, msg.encode('utf-8'))
                         # Send message to person who initiated the game
-                        client_socket.send(
-                            self.serverheader + self.servername + msg_header + msg.encode('utf-8'))
+                        self.send_message(client_socket, msg)
                         continue
                     
                     if msg['data'].decode()[:1] == "/":
-                        if user['game'] == None:
+                        gamekey = user['gamekey']
+                        if gamekey == None:
                             self.send_message(client_socket, "You are currently not in a game. Start a game with /tictactoe playername")
                             continue
+                        game = self.games[gamekey]
                         
                         x_coord = msg['data'].decode()[1]
                         if msg['data'].decode()[3] == ' ':
@@ -119,11 +112,19 @@ class Server():
                         else:
                             y_coord = msg['data'].decode()[3]
                         if not x_coord.isnumeric() or not y_coord.isnumeric():
-                            msg = "Did you mean to play a move? /x,y".encode('utf-8')
-                            msg_header = f"{len(msg):<{10}}".encode('utf-8')
-                            client_socket.send(
-                                self.serverheader + self.servername + msg_header + msg.encode('utf-8'))
+                            self.send_message(client_socket, "Did you mean to play a move? /x,y")
                             continue
+                        
+                        msg, winner = game.play_move(client_socket, [x_coord,y_coord])
+                        # If we have a winner or a draw, set the clients game to None and delete game from hashmap
+                        if winner:
+                            self.clients[game.get_x()]['gamekey'] = None
+                            self.clients[game.get_o()]['gamekey'] = None
+                            del self.game['gamekey']
+                        self.broadcast(client_socket, self.serverheader,
+                                       self.servername, msg_header, msg.encode('utf-8'))
+                        # Send message to person who made the last move
+                        self.send_message(client_socket, msg)
 
                     print(
                         f'Received message from {user["user"]["data"].decode("utf-8")}: {msg["data"].decode("utf-8")}')
@@ -134,7 +135,7 @@ class Server():
                     
                     
     def send_message(self, client_socket, msg):
-        """Sends a message to an individual user
+        """Sends a decoded message to an individual user
 
         Args:
             client_socket (socket): the users socket
@@ -145,6 +146,16 @@ class Server():
             self.serverheader + self.servername + msg_header + msg.encode('utf-8'))
 
     def broadcast(self, client_socket, user_header, user_data, msg_header, msg_data):
+        """Sends an encoded message to all connected users
+        TODO: add docstrings
+
+        Args:
+            client_socket (_type_): _description_
+            user_header (_type_): _description_
+            user_data (_type_): _description_
+            msg_header (_type_): _description_
+            msg_data (_type_): _description_
+        """
         for client in self.clients:
             if client != client_socket:
                 client.send(user_header + user_data + msg_header + msg_data)
