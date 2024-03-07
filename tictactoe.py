@@ -7,8 +7,8 @@ class TicTacToe():
         # self.x = [players.pop(random.randint(0,1)), "x"]
         # self.o = [players[0], "o"]
         self.players = {
-            "o": players.pop(random.randint(0, 1)),
-            "x": players[0]
+            "o": (players.pop(random.randint(0, 1))),
+            "x": (players[0])
         }
         self.currenturn = "o"
         self.board = [[" " for x in range(3)] for i in range(3)]
@@ -47,10 +47,10 @@ class TicTacToe():
             self.currenturn = "o"
 
     def get_current_player_name(self):
-        return self.players[self.get_current_turn()]
+        return self.players[self.get_current_turn()][1]
 
     def _is_player_turn(self, player):
-        return player == self.players[self.currenturn]
+        return player == self.players[self.currenturn][0]
 
     def _validate_move(self, move):
         # check if the move is within boundaries
