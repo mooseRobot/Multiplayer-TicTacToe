@@ -64,8 +64,10 @@ class Server():
                     # Print board and announce winner if there is.
 
                     # Add a check for /forfeit
-                    if msg['data'].decode()[:1] == "/":
-                        pass
+
+                        
+                            
+                        
 
                     if msg['data'].decode()[:11] == "/tictactoe ":
                         if user['game'] != None:
@@ -81,10 +83,11 @@ class Server():
                         opponent_conn = self.validate_opponent(
                             user['user']['data'], opponent_name)
                         if opponent_conn is False:
-                            msg = "Invalid user".encode('utf-8')
-                            msg_header = f"{len(msg):<{10}}".encode('utf-8')
-                            client_socket.send(
-                                self.serverheader + self.servername + msg_header + msg)
+                            self.send_message(client_socket, "Invalid user")
+                            # msg = "Invalid user".encode('utf-8')
+                            # msg_header = f"{len(msg):<{10}}".encode('utf-8')
+                            # client_socket.send(
+                            #     self.serverheader + self.servername + msg_header + msg)
                             continue
 
                         # Generate a unique game key and create the game
@@ -104,12 +107,42 @@ class Server():
                         client_socket.send(
                             self.serverheader + self.servername + msg_header + msg.encode('utf-8'))
                         continue
+                    
+                    if msg['data'].decode()[:1] == "/":
+                        if user['game'] == None:
+                            self.send_message(client_socket, "You are currently not in a game. Start a game with /tictactoe playername")
+                            continue
+                        
+                        x_coord = msg['data'].decode()[1]
+                        if msg['data'].decode()[3] == ' ':
+                            y_coord = msg['data'].decode()[4]
+                        else:
+                            y_coord = msg['data'].decode()[3]
+                        if not x_coord.isnumeric() or not y_coord.isnumeric():
+                            msg = "Did you mean to play a move? /x,y".encode('utf-8')
+                            msg_header = f"{len(msg):<{10}}".encode('utf-8')
+                            client_socket.send(
+                                self.serverheader + self.servername + msg_header + msg.encode('utf-8'))
+                            continue
 
                     print(
                         f'Received message from {user["user"]["data"].decode("utf-8")}: {msg["data"].decode("utf-8")}')
                     # Send message to all connect clients
                     self.broadcast(
                         client_socket, user['user']['header'], user['user']['data'], msg['header'], msg['data'])
+                    
+                    
+                    
+    def send_message(self, client_socket, msg):
+        """Sends a message to an individual user
+
+        Args:
+            client_socket (socket): the users socket
+            msg (str): The message to send
+        """
+        msg_header = f"{len(msg):<{10}}".encode('utf-8')
+        client_socket.send(
+            self.serverheader + self.servername + msg_header + msg.encode('utf-8'))
 
     def broadcast(self, client_socket, user_header, user_data, msg_header, msg_data):
         for client in self.clients:
