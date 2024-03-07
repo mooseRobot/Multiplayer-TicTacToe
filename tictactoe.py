@@ -107,14 +107,14 @@ class TicTacToe():
         """
         # Prevent players from making additional moves
         if self.winner:
-            return "Game over"
+            return ("Game over", True)
 
         if not self._is_player_turn(player):
             # Change wording on this
-            return f"It is {self.get_current_player_name()}'s turn"
+            return (f"It is {self.get_current_player_name()}'s turn", False)
 
         if not self._validate_move(move):
-            return "Invalid move"
+            return ("Invalid move", False)
 
         x_coord = move[0]
         y_coord = move[1]
