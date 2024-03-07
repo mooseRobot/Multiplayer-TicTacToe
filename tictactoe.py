@@ -33,10 +33,11 @@ class TicTacToe():
     def get_current_turn(self):
         return self.currenturn
     
-    def change_turn(self):
+    def _change_turn(self):
         if self.currenturn == self.o:
             self.currenturn = self.x
         else:
             self.currenturn = self.o
 
-
+    def play_move(self, player, move):
+        pass
