@@ -87,8 +87,8 @@ class TicTacToe():
     def _draw_check(self):
         for row in self.board:
             if row.count(" ") > 0:
-                return True
-        return False
+                return False
+        return True
 
 
     def place_move(self, player, move: list) -> str:
@@ -112,6 +112,7 @@ class TicTacToe():
 
         # Check for draw
         if self._draw_check():
-            pass
+            return "Draw!"
+        return "Move placed"
 
 
