@@ -133,4 +133,4 @@ class TicTacToe():
         if self._draw_check():
             self.winner = True
             return ("Draw!", True)
-        return ("Move placed", False)
+        return (f"{self.get_current_player_name()} turn", False)
