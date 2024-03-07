@@ -39,7 +39,7 @@ class Server():
                     if user is False:
                         continue
                     sockets_list.append(client_conn)
-                    self.clients[client_conn] = {'user': user, 'game': None}
+                    self.clients[client_conn] = {'user': user, 'gamekey': None}
                     print(
                         f"{user['data'].decode('utf-8')} joined from {client_addr[0]}:{client_addr[1]}")
                 # Existing socket is sending message
@@ -84,22 +84,21 @@ class Server():
 
                         # Generate a unique game key and create the game
                         gamekey = uuid.uuid1().int
-                        game = TicTacToe([client_socket, opponent_conn])
+                        game = TicTacToe([(client_socket, user["user"]["data"].decode("utf-8")), (opponent_conn, opponent_name)])
                         user['gamekey'] = gamekey
                         self.clients[opponent_conn]['gamekey'] = gamekey
                         self.games[gamekey] = game
 
                         # Construct message to send
                         board_str = self.games[gamekey].print_board()
-                        msg = f"Welcome to TicTacToe! To play a move enter /x,y. x and y can be from any value 1-3.\n{self.clients[game.get_current_player_name()]['user']['data'].decode('utf-8')}'s turn as o.\n" + board_str
+                        msg = f"Welcome to TicTacToe! To play a move enter /x,y. x and y can be from any value 1-3.\n{game.get_current_player_name()}'s turn as o.\n" + board_str
                         msg_header = f"{len(msg):<10}".encode('utf-8')
                         self.broadcast(client_socket, self.serverheader,
                                        self.servername, msg_header, msg.encode('utf-8'))
                         # Send message to person who initiated the game
                         self.send_message(client_socket, msg)
-                        continue
                     
-                    if msg['data'].decode()[:1] == "/":
+                    elif msg['data'].decode()[:1] == "/":
                         gamekey = user['gamekey']
                         if gamekey == None:
                             self.send_message(client_socket, "You are currently not in a game. Start a game with /tictactoe playername")
@@ -115,22 +114,25 @@ class Server():
                             self.send_message(client_socket, "Did you mean to play a move? /x,y")
                             continue
                         
-                        msg, winner = game.play_move(client_socket, [x_coord,y_coord])
+                        msg, winner = game.play_move(client_socket, [int(x_coord),int(y_coord)])
                         # If we have a winner or a draw, set the clients game to None and delete game from hashmap
                         if winner:
-                            self.clients[game.get_x()]['gamekey'] = None
-                            self.clients[game.get_o()]['gamekey'] = None
+                            self.clients[game.get_x()[0]]['gamekey'] = None
+                            self.clients[game.get_o()[0]]['gamekey'] = None
                             del self.game['gamekey']
+                        msg = msg + "\n" + game.print_board()  # Attach gameboard
+                        msg_header = f"{len(msg):<10}".encode('utf-8')
                         self.broadcast(client_socket, self.serverheader,
                                        self.servername, msg_header, msg.encode('utf-8'))
                         # Send message to person who made the last move
                         self.send_message(client_socket, msg)
 
-                    print(
-                        f'Received message from {user["user"]["data"].decode("utf-8")}: {msg["data"].decode("utf-8")}')
-                    # Send message to all connect clients
-                    self.broadcast(
-                        client_socket, user['user']['header'], user['user']['data'], msg['header'], msg['data'])
+                    else:
+                        print(
+                            f'Received message from {user["user"]["data"].decode("utf-8")}: {msg["data"].decode("utf-8")}')
+                        # Send message to all connect clients
+                        self.broadcast(
+                            client_socket, user['user']['header'], user['user']['data'], msg['header'], msg['data'])
                     
                     
                     
