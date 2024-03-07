@@ -10,6 +10,7 @@ class TicTacToe():
         }
         self.currenturn = "o"
         self.board = [[" " for x in range(3)] for i in range(3)]
+        self.winner = False
 
     def print_board(self):
         """Returns a string of the current board
@@ -58,7 +59,7 @@ class TicTacToe():
             return False
         
         # Check is the spot is open
-        if move[y_coord][x_coord] != " ":
+        if self.board[y_coord][x_coord] != " ":
             return False
         return True
     
@@ -74,7 +75,7 @@ class TicTacToe():
             for row in self.board:
                 column_set.add(row[i])
             if len(column_set) == 1 and self.board[0][i] != ' ':
-                return f"{self.players[self.board[i][0]]}' won!"
+                return f"{self.players[self.board[i][0]]} won!"
             
         # Check diagonals
         if len(set(self.board[i][i] for i in range(3))) == 1 and self.board[0][0] != ' ':
@@ -92,6 +93,10 @@ class TicTacToe():
 
 
     def place_move(self, player, move: list) -> str:
+        # Prevent players from making additional moves
+        if self.winner:
+            return "Game over"
+
         if not self._is_player_turn(player):
             return f"It is {self.get_current_turn()}'s turn"  # Change wording on this
         
@@ -108,10 +113,12 @@ class TicTacToe():
         # Check for winner
         winner = self._winner_check()
         if winner is not None:
+            self.winner = True
             return winner
 
         # Check for draw
         if self._draw_check():
+            self.winner = True
             return "Draw!"
         return "Move placed"
 
