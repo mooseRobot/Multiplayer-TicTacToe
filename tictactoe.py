@@ -2,10 +2,15 @@ import random
 class TicTacToe():
     
     def __init__(self, players: list):
-        self.x = players.pop(random.randint(0,1))
-        self.o = players[0]
-        self.currenturn = self.o
+        # self.x = [players.pop(random.randint(0,1)), "x"]
+        # self.o = [players[0], "o"]
+        self.players = {
+            "o": players.pop(random.randint(0,1)),
+            "x": players[0]
+        }
+        self.currenturn = "o"
         self.board = [[" " for x in range(3)] for i in range(3)]
+        self.winner = False
 
     def print_board(self):
         """Returns a string of the current board
@@ -25,19 +30,98 @@ class TicTacToe():
         return board_str
     
     def get_x(self):
-        return self.x
+        return self.players["x"]
     
     def get_o(self):
-        return self.o
+        return self.players["o"]
     
     def get_current_turn(self):
         return self.currenturn
     
     def _change_turn(self):
-        if self.currenturn == self.o:
-            self.currenturn = self.x
+        if self.currenturn == "o":
+            self.currenturn = "x"
         else:
-            self.currenturn = self.o
+            self.currenturn = "o"
+            
+    def get_current_player_name(self):
+        return self.players[self.get_current_turn()]
 
-    def play_move(self, player, move):
-        pass
+    def _is_player_turn(self, player):
+        return player == self.players[self.currenturn]
+    
+    def _validate_move(self, move):
+        # check if the move is within boundaries
+        x_coord = move[0]
+        y_coord = move[1]
+
+        # Check valid boundaries
+        if not 0 <= x_coord < 3:
+            return False
+        if not 0 <= y_coord < 3:
+            return False
+        
+        # Check is the spot is open
+        if self.board[y_coord][x_coord] != " ":
+            return False
+        return True
+    
+    def _winner_check(self):
+        for i in range(3):
+            # Check each row
+            
+            if len(set(self.board[i])) == 1 and self.board[i][0] != ' ':
+                return f"{self.players[self.board[i][0]]}' won!"
+            
+            # check column
+            column_set = set()
+            for row in self.board:
+                column_set.add(row[i])
+            if len(column_set) == 1 and self.board[0][i] != ' ':
+                return f"{self.players[self.board[i][0]]} won!"
+            
+        # Check diagonals
+        if len(set(self.board[i][i] for i in range(3))) == 1 and self.board[0][0] != ' ':
+            return f"{self.players[self.board[0][0]]} won!"
+        if len(set(self.board[i][2-i] for i in range(3))) == 1 and self.board[0][2] != ' ':
+            return f"{self.players[self.board[0][2]]} won!"
+        return None
+
+
+    def _draw_check(self):
+        for row in self.board:
+            if row.count(" ") > 0:
+                return False
+        return True
+
+
+    def play_move(self, player, move: list) -> str:
+        # Prevent players from making additional moves
+        if self.winner:
+            return "Game over"
+
+        if not self._is_player_turn(player):
+            return f"It is {self.get_current_player_name()}'s turn"  # Change wording on this
+        
+        if not self._validate_move(move):
+            return "Invalid move"
+        
+        x_coord = move[0]
+        y_coord = move[1]
+        self.board[y_coord][x_coord] = self.get_current_turn()
+        
+        # Change turn
+        self._change_turn()
+
+        # Check for winner
+        winner = self._winner_check()
+        if winner is not None:
+            self.winner = True
+            return winner
+
+        # Check for draw
+        if self._draw_check():
+            self.winner = True
+            return "Draw!"
+        return "Move placed"
+
