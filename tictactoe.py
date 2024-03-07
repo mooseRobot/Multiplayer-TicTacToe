@@ -63,21 +63,25 @@ class TicTacToe():
         return True
     
     def _winner_check(self):
-        winner = False
         for i in range(3):
             # Check each row
-            row = self.board[i]
-            if len(set(row)) == 1 and row[0] != ' ':
-                return f"{self.players[row[0]]}' won!"
+            
+            if len(set(self.board[i])) == 1 and self.board[i][0] != ' ':
+                return f"{self.players[self.board[i][0]]}' won!"
             
             # check column
-            if self.board[0][i] == self.board[1][i] and self.board[0][i] == self.board[2][i]:
-                return
-
-        # Check column
-
-        # Check diagnols
-        pass
+            column_set = set()
+            for row in self.board:
+                column_set.add(row[i])
+            if len(column_set) == 1 and self.board[0][i] != ' ':
+                return f"{self.players[self.board[i][0]]}' won!"
+            
+        # Check diagonals
+        if len(set(self.board[i][i] for i in range(3))) == 1 and self.board[0][0] != ' ':
+            return f"{self.players[self.board[0][0]]} won!"
+        if len(set(self.board[i][2-i] for i in range(3))) == 1 and self.board[0][2] != ' ':
+            return f"{self.players[self.board[0][2]]} won!"
+        return None
 
 
     def _draw_check(self):
@@ -102,7 +106,12 @@ class TicTacToe():
         self._change_turn()
 
         # Check for winner
+        winner = self._winner_check()
+        if winner is not None:
+            return winner
 
         # Check for draw
+        if self._draw_check():
+            pass
 
 
