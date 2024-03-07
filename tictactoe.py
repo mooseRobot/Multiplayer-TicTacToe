@@ -95,7 +95,16 @@ class TicTacToe():
                 return False
         return True
 
-    def play_move(self, player, move: list) -> str:
+    def play_move(self, player, move: list) -> tuple:
+        """Plays a move
+
+        Args:
+            player (obj): any obj/type that identifies a player.
+            move (list): [x, y]
+
+        Returns:
+            tuple: (return string, boolean whether or not the game is still going)
+        """
         # Prevent players from making additional moves
         if self.winner:
             return "Game over"
@@ -118,10 +127,10 @@ class TicTacToe():
         winner = self._winner_check()
         if winner is not None:
             self.winner = True
-            return winner
+            return (winner, True)
 
         # Check for draw
         if self._draw_check():
             self.winner = True
-            return "Draw!"
-        return "Move placed"
+            return ("Draw!", True)
+        return ("Move placed", False)
